@@ -1,0 +1,26 @@
+{
+  "name": "@ccmt/relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'lint: relay (not configured yet)'",
+    "test": "echo 'test: relay (not configured yet)'"
+  },
+  "dependencies": {
+    "@ccmt/protocol": "workspace:*",
+    "@fastify/cors": "^11.2.0",
+    "fastify": "^5.2.1",
+    "ws": "^8.18.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
