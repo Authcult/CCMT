@@ -30,6 +30,11 @@ const RefreshBodySchema = z.object({
 
 type AuthRouteDeps = {
   authService: AuthService;
+  store: {
+    factoryReset: () => void;
+  };
+  flushState: () => Promise<void>;
+  disconnectAllConnections: (reason?: string) => void;
 };
 
 function unauthorized(reply: FastifyReply): void {
@@ -80,8 +85,14 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthRouteDeps): v
       return;
     }
 
+    deps.disconnectAllConnections("factory_reset");
+    deps.authService.factoryReset();
+    deps.store.factoryReset();
+    await deps.flushState();
+
     return {
-      status: deps.authService.hasAnyUser() ? "already_initialized" : "initialized",
+      status: "factory_reset",
+      next: "bootstrap",
     };
   });
 

@@ -7,12 +7,14 @@ export function getRelayHttpUrl(): string {
 }
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers ?? {});
+  if (init?.body !== undefined && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+
   const response = await fetch(`${getRelayHttpUrl()}${path}`, {
     ...init,
-    headers: {
-      "content-type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
   });
 
   const bodyText = await response.text();
@@ -100,7 +102,8 @@ export type AgentRegisterResponse = {
 };
 
 export type InitializeSystemResponse = {
-  status: "initialized" | "already_initialized";
+  status: "factory_reset";
+  next: "bootstrap";
 };
 
 export async function fetchMe(accessToken: string): Promise<MeResponse> {

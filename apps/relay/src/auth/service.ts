@@ -347,6 +347,18 @@ export class AuthService {
     return this.users.size > 0;
   }
 
+  factoryReset(): void {
+    this.users.clear();
+    this.usernameToUserId.clear();
+    this.devices.clear();
+    this.loginChallenges.clear();
+    this.totpSetupChallenges.clear();
+    this.sessions.clear();
+    this.refreshTokens.clear();
+    this.agentTokens.clear();
+    this.markDirty();
+  }
+
   createBootstrapOwner(input: { username: string; password: string }):
     | { ok: true; user: { id: string; username: string; role: "owner" }; totpSecret: string; otpauthUrl: string }
     | { ok: false; reason: "owner_exists" | "username_taken" } {

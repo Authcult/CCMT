@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { Server, LogIn, Lock, Smartphone, ShieldCheck, UserPlus, LogOut, Terminal, TerminalSquare, AlertCircle, CheckCircle2, Globe } from "lucide-react";
 import {
   beginLogin,
@@ -28,6 +29,7 @@ type LoginState = {
 type BootstrapProvisioningState = {
   username: string;
   totp: TotpProvisioning;
+  qrCodeDataUrl: string;
 };
 
 function toUserMessage(error: unknown, fallback: string, t: (key: string) => string): string {
@@ -226,10 +228,16 @@ export default function HomePage() {
         username: bootstrapUsername.trim(),
         password: bootstrapPassword,
       });
+      const qrCodeDataUrl = await QRCode.toDataURL(result.totp.otpauthUrl, {
+        width: 224,
+        margin: 1,
+        errorCorrectionLevel: "M",
+      });
 
       setBootstrapProvisioning({
         username: result.user.username,
         totp: result.totp,
+        qrCodeDataUrl,
       });
       setUsername(result.user.username);
       setPassword(bootstrapPassword);
@@ -282,14 +290,26 @@ export default function HomePage() {
 
     try {
       const result = await initializeSystem(accessToken);
-      setStatusText(result.status === "initialized" ? t("dash.init.success") : t("dash.init.already"));
-      await loadAuthedData();
+      if (result.status === "factory_reset") {
+        clearAuthTokens();
+        setIsAuthed(false);
+        setTargets([]);
+        setUserSub("");
+        setUserRole(null);
+        setDeviceCount(0);
+        setLoginState(null);
+        setTotpCode("");
+        setBootstrapProvisioning(null);
+        setLoginStage("bootstrap");
+        setStatusText(t("dash.init.success"));
+        return;
+      }
     } catch (error: unknown) {
       setErrorText(toUserMessage(error, t("err.init_failed"), t));
     } finally {
       setLoading(false);
     }
-  }, [loadAuthedData, userRole, t]);
+  }, [userRole, t]);
 
   const handleOpenSession = useCallback(async (targetId: string) => {
     const accessToken = getAccessToken();
@@ -498,11 +518,24 @@ export default function HomePage() {
                     <p className="text-emerald-500/80 text-sm mt-1">{t("boot.success.saveTotp")}</p>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">{t("boot.totpSecret")}</span>
-                    <code className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-center text-xl font-mono text-blue-400 select-all tracking-widest">
-                      {bootstrapProvisioning.totp.secret}
-                    </code>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+                    <div className="flex flex-col gap-2 sm:w-[240px] shrink-0">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">QR Code</span>
+                      <div className="bg-white rounded-2xl p-3 border border-slate-700 shadow-inner self-center sm:self-auto">
+                        <img
+                          src={bootstrapProvisioning.qrCodeDataUrl}
+                          alt="TOTP QR code"
+                          className="block w-52 h-52 rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">{t("boot.totpSecret")}</span>
+                      <code className="bg-slate-950 border border-slate-800 p-4 rounded-xl text-center text-xl font-mono text-blue-400 select-all tracking-widest break-all">
+                        {bootstrapProvisioning.totp.secret}
+                      </code>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2 mt-2">

@@ -28,6 +28,26 @@ type AgentRegisterResponse = {
   agentId: string;
 };
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isRetryableRegisterError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const cause = error.cause;
+  if (!cause || typeof cause !== "object" || !("code" in cause)) {
+    return error.message === "fetch failed";
+  }
+
+  const code = (cause as { code?: unknown }).code;
+  return code === "ECONNREFUSED" || code === "ECONNRESET" || code === "ETIMEDOUT";
+}
+
 async function registerAgent(): Promise<AgentRegisterResponse> {
   const response = await fetch(`${relayHttpUrl}/agents/register`, {
     method: "POST",
@@ -51,6 +71,21 @@ async function registerAgent(): Promise<AgentRegisterResponse> {
   return body as AgentRegisterResponse;
 }
 
+async function registerAgentWithRetry(): Promise<AgentRegisterResponse> {
+  while (true) {
+    try {
+      return await registerAgent();
+    } catch (error) {
+      if (!isRetryableRegisterError(error)) {
+        throw error;
+      }
+
+      console.log("[host-agent] waiting for relay...");
+      await sleep(1500);
+    }
+  }
+}
+
 function buildAgentWsUrl(token: string, targetIdValue: string, agentIdValue: string): string {
   const url = new URL(relayWsUrl);
   url.searchParams.set("role", "agent");
@@ -61,7 +96,7 @@ function buildAgentWsUrl(token: string, targetIdValue: string, agentIdValue: str
 }
 
 async function boot(): Promise<void> {
-  const registration = await registerAgent();
+  const registration = await registerAgentWithRetry();
   const wsUrl = buildAgentWsUrl(registration.agentToken, registration.targetId, registration.agentId);
 
   connectAgentSocket({

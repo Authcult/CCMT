@@ -215,6 +215,13 @@ export class MemoryStore {
   getWebClients(sessionId: string): WebSocket[] {
     return Array.from(this.webClients.get(sessionId) ?? []);
   }
+
+  factoryReset(): void {
+    this.targets.clear();
+    this.sessions.clear();
+    this.webClients.clear();
+    this.markDirty();
+  }
 }
 
 export { MAX_SCROLLBACK_BYTES };

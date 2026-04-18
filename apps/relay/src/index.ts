@@ -87,18 +87,23 @@ app.get("/health", async () => ({
   now: Date.now(),
 }));
 
-registerAuthRoutes(app, { authService });
-registerTargetRoutes(app, { authService, store });
-registerSessionRoutes(app, { authService, store });
-registerAgentRoutes(app, { authService, agentEnrollSecret });
-
-setupGateway({
+const gateway = setupGateway({
   server: app.server,
   wsPath,
   store,
   authService,
   logger: app.log,
 });
+
+registerAuthRoutes(app, {
+  authService,
+  store,
+  flushState: () => fileStateRepository.flushNow(),
+  disconnectAllConnections: gateway.disconnectAllConnections,
+});
+registerTargetRoutes(app, { authService, store });
+registerSessionRoutes(app, { authService, store });
+registerAgentRoutes(app, { authService, agentEnrollSecret });
 
 app
   .listen({ port: relayPort, host: "0.0.0.0" })

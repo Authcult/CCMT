@@ -83,8 +83,29 @@ function normalizeFrameRole(frame: Frame, from: Actor, target: Actor): Frame {
   };
 }
 
-export function setupGateway(config: GatewayConfig): void {
+export function setupGateway(config: GatewayConfig): { disconnectAllConnections: (reason?: string) => void } {
   const wss = new WebSocketServer({ noServer: true });
+  const activeSockets = new Set<WebSocket>();
+
+  const trackSocket = (socket: WebSocket) => {
+    activeSockets.add(socket);
+    socket.on("close", () => {
+      activeSockets.delete(socket);
+    });
+  };
+
+  const disconnectAllConnections = (reason = "factory_reset") => {
+    for (const socket of activeSockets) {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close(1012, reason);
+      }
+    }
+  };
+
+  wss.on("connection", (socket) => {
+    trackSocket(socket);
+  });
+
 
   function onAgentConnected(socket: WebSocket, targetId: string, agentId: string): void {
     config.store.registerTarget(targetId, agentId, socket);
@@ -257,4 +278,8 @@ export function setupGateway(config: GatewayConfig): void {
     const targetId = url.searchParams.get("targetId") ?? claims.targetId;
     onWebConnected(ws, sessionId, targetId ?? undefined);
   }
+
+  return {
+    disconnectAllConnections,
+  };
 }

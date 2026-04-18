@@ -17,7 +17,7 @@ const translations: Record<Language, Translations> = {
     "btn.back": "Back",
     "btn.cancel": "Cancel & Return",
     "btn.logout": "Logout",
-    "btn.initSystem": "Init System",
+    "btn.initSystem": "Factory Reset",
     "status.loading": "Processing...",
 
     // Errors
@@ -29,11 +29,11 @@ const translations: Record<Language, Translations> = {
     "err.owner_exists": "System is already initialized, please log in directly.",
     "err.username_taken": "Username is already taken, please choose another.",
     "err.unauthorized": "Session invalid, please log in again.",
-    "err.forbidden_not_owner": "Only owners can initialize the system.",
+    "err.forbidden_not_owner": "Only owners can factory reset the system.",
     "err.load_failed": "Failed to load data.",
     "err.login_failed": "Login failed.",
     "err.verify_failed": "Verification failed.",
-    "err.init_failed": "System initialization failed.",
+    "err.init_failed": "System reset failed.",
     "err.create_session_failed": "Failed to create terminal session.",
     "err.bootstrap_required": "System requires initialization. Please create the first owner account and bind TOTP.",
 
@@ -54,7 +54,7 @@ const translations: Record<Language, Translations> = {
     "totp.verifying": "Verifying...",
 
     // Bootstrap
-    "boot.title": "Initialize System",
+    "boot.title": "Set Up System",
     "boot.badge": "Setup",
     "boot.desc": "System requires initialization. Create the first administrative owner account and bind TOTP for 2FA.",
     "boot.ownerUsername": "Owner Username (min 3 chars)",
@@ -78,8 +78,8 @@ const translations: Record<Language, Translations> = {
     "dash.empty.title": "No Targets Online",
     "dash.empty.desc": "Start a host-agent on your target machine to connect.",
     "dash.btn.openTerminal": "Open Terminal",
-    "dash.init.success": "System initialized successfully.",
-    "dash.init.already": "System is already initialized, no action needed.",
+    "dash.init.success": "System reset complete. Create a new owner account and bind TOTP.",
+    "dash.init.already": "",
 
     // Terminal
     "term.backLink": "Dashboard",
@@ -98,7 +98,7 @@ const translations: Record<Language, Translations> = {
     "btn.back": "返回上一步",
     "btn.cancel": "取消并返回",
     "btn.logout": "退出登录",
-    "btn.initSystem": "初始化系统",
+    "btn.initSystem": "恢复出厂设置",
     "status.loading": "处理中...",
 
     // Errors
@@ -110,11 +110,11 @@ const translations: Record<Language, Translations> = {
     "err.owner_exists": "系统已初始化，请直接登录。",
     "err.username_taken": "用户名已被占用，请更换后重试。",
     "err.unauthorized": "登录状态无效，请重新登录。",
-    "err.forbidden_not_owner": "只有管理员可以执行系统初始化操作。",
+    "err.forbidden_not_owner": "只有管理员可以执行恢复出厂设置操作。",
     "err.load_failed": "加载失败。",
     "err.login_failed": "登录失败。",
     "err.verify_failed": "验证失败。",
-    "err.init_failed": "系统初始化失败。",
+    "err.init_failed": "系统重置失败。",
     "err.create_session_failed": "创建终端会话失败。",
     "err.bootstrap_required": "系统尚未初始化，请先创建管理员账号并绑定 TOTP。",
 
@@ -135,7 +135,7 @@ const translations: Record<Language, Translations> = {
     "totp.verifying": "验证中...",
 
     // Bootstrap
-    "boot.title": "系统初始化",
+    "boot.title": "系统设置",
     "boot.badge": "初始化",
     "boot.desc": "系统尚未初始化。请创建首个管理员账号并完成 TOTP 绑定。",
     "boot.ownerUsername": "管理员用户名（至少 3 位）",
@@ -159,8 +159,8 @@ const translations: Record<Language, Translations> = {
     "dash.empty.title": "暂无在线终端",
     "dash.empty.desc": "请先在目标机器启动 host-agent。",
     "dash.btn.openTerminal": "打开终端",
-    "dash.init.success": "系统初始化完成。",
-    "dash.init.already": "系统已经初始化，无需重复执行。",
+    "dash.init.success": "系统已重置，请重新创建管理员并绑定 TOTP。",
+    "dash.init.already": "",
 
     // Terminal
     "term.backLink": "会话列表",
