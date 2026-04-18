@@ -4,46 +4,40 @@
 
 [中文 README](./README.md)
 
-## What is CCMT?
+## Overview
 
-CCMT is a `pnpm workspace` monorepo for remote terminal control. It splits terminal access into three main pieces:
+CCMT is a `pnpm workspace` monorepo for remote terminal control. It separates terminal access into three independent but cooperating modules:
 
 - `web`: the browser-based console
-- `relay`: the authentication, session, and forwarding layer
+- `relay`: the authentication, session management, and forwarding layer
 - `host-agent`: the terminal-side agent running on the target machine
 
-The repository already wires up the basic end-to-end flow: login, TOTP-based 2FA, target registration, session creation, WebSocket terminal forwarding, and relay state persistence.
+The repository already provides a complete baseline flow: login, TOTP-based 2FA, target registration, session creation, WebSocket terminal forwarding, state persistence, and session recovery.
 
-## What can it be used for?
+## Use Cases
+
+CCMT is a good fit for scenarios such as:
 
 - accessing a shell on a selected host from the browser
-- placing authentication and session control in front of remote terminal access
-- serving as a minimal runnable reference for a “web console + relay + agent” architecture
+- adding a unified authentication and session-control layer in front of remote terminal access
+- serving as a minimal runnable reference for a “Web Console + Relay + Agent” architecture
 - evolving into a multi-target, multi-user, permission-aware remote operations console
 
-## Highlights
+## Key Features
 
 - username / password + TOTP two-factor authentication
-- first-time owner bootstrap
-- access token / refresh token / WebSocket ticket auth flow
+- first-time owner bootstrap flow
+- TOTP QR code rendering
+- access token / refresh token / WebSocket ticket auth chain
 - persisted relay auth and session state
+- persisted session scrollback with reconnect recovery
 - host-agent publishing a local shell as a connectable target
+- host-agent automatically retrying while relay is not ready yet
 - browser terminal page with connection, reconnection, scrollback, and basic controls
+- dashboard factory reset flow that returns to bootstrap
 - bilingual UI support
 
-## UI Preview
-
-The repository does not yet include official screenshots, so this README reserves screenshot slots that can be filled later.
-
-| Screen | Description | Reserved Path |
-| --- | --- | --- |
-| Login / First-time setup | user login, owner bootstrap, TOTP setup | `docs/images/login.png` |
-| Dashboard | target list, user info, initialization entry | `docs/images/dashboard.png` |
-| Terminal | remote terminal session in the browser | `docs/images/terminal.png` |
-
-> These image files are not created yet. The table is only reserving the display locations for the README.
-
-## End-to-End Flow
+## Architecture
 
 ```mermaid
 sequenceDiagram
@@ -77,7 +71,7 @@ sequenceDiagram
 
 ## Quick Start
 
-### 1) Requirements
+### 1. Requirements
 
 Recommended versions:
 
@@ -91,7 +85,7 @@ corepack enable
 corepack prepare pnpm@10.30.3 --activate
 ```
 
-### 2) Install dependencies
+### 2. Install dependencies
 
 From the repository root:
 
@@ -99,7 +93,7 @@ From the repository root:
 pnpm install
 ```
 
-### 3) Prepare environment variables
+### 3. Prepare environment variables
 
 Copy the template:
 
@@ -107,7 +101,13 @@ Copy the template:
 cp .env.example .env
 ```
 
-Then export the variables into your current shell:
+It is recommended to write `.env` in `export KEY=value` form and then load it directly:
+
+```bash
+source .env
+```
+
+If your `.env` still uses plain `KEY=value` lines, load it like this instead:
 
 ```bash
 set -a
@@ -115,19 +115,19 @@ source .env
 set +a
 ```
 
-### 4) Start all services
+### 4. Start all services
 
 ```bash
 pnpm dev
 ```
 
-### 5) Open the web console
+### 5. Open the web console
 
 ```text
 http://localhost:3000
 ```
 
-### 6) Recommended first-time flow
+### 6. Recommended first-time flow
 
 1. Open the login page.
 2. Click “First time setup”.
@@ -138,7 +138,7 @@ http://localhost:3000
 7. After login, enter the dashboard.
 8. Open the terminal for the target you want.
 
-## Installation and Startup
+## Local Development
 
 ### Start the whole project at once
 
@@ -183,25 +183,6 @@ Default endpoints:
 - Relay HTTP: `http://localhost:8787`
 - Relay WebSocket: `ws://localhost:8787/ws`
 
-## One Important Gotcha
-
-In the current codebase:
-
-- `apps/relay`
-- `apps/host-agent`
-
-read directly from `process.env` and **do not automatically load the root `.env` file**.
-
-So if you only run `cp .env.example .env` but never `source` it into your shell, relay and host-agent will still not see those values.
-
-That is why this command sequence is called out explicitly throughout the README:
-
-```bash
-set -a
-source .env
-set +a
-```
-
 ## Module Guide
 
 ### `apps/web`
@@ -212,7 +193,7 @@ Responsible for:
 - login, TOTP verification, and token refresh
 - displaying target / session / device data
 - creating or reusing terminal sessions
-- opening the browser WebSocket terminal connection
+- establishing the browser-side WebSocket terminal connection
 
 ### `apps/relay`
 
@@ -220,7 +201,7 @@ Responsible for:
 
 - APIs such as `/auth/*`, `/targets`, `/sessions`, and `/agents/register`
 - issuing and verifying user tokens, refresh tokens, WS tickets, and agent tokens
-- tracking target and session state
+- managing target and session state
 - storing scrollback
 - persisting relay state to disk
 
@@ -235,7 +216,7 @@ Default state file:
 Responsible for:
 
 - registering with the relay using the enroll secret
-- opening the agent WebSocket connection
+- establishing the agent WebSocket connection
 - spawning a local shell
 - forwarding terminal output and receiving input / resize / signal events
 
@@ -248,8 +229,8 @@ The current implementation publishes one target by default:
 
 Responsible for:
 
-- shared message frame definitions
-- terminal input / output / resize / signal / state / error schema
+- defining shared message frames
+- standardizing terminal input / output / resize / signal / state / error message formats
 - reducing protocol drift across web, relay, and host-agent
 
 ## Common Commands
@@ -275,7 +256,7 @@ pnpm --filter @ccmt/protocol build
 
 ## Environment Variables
 
-These are the main environment variables used by the current code.
+These are the main environment variables currently read by the code.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
@@ -295,7 +276,7 @@ These are the main environment variables used by the current code.
 
 ### Optional: seed an owner at startup
 
-The current code also supports these optional variables:
+The current code also supports the following optional variables:
 
 - `CCMT_OWNER_USERNAME`
 - `CCMT_OWNER_PASSWORD`
@@ -303,25 +284,229 @@ The current code also supports these optional variables:
 
 If all three are present, the relay creates an owner account automatically on startup.
 
-## Repository Structure
+## Deployment Notes
+
+The following workflow comes from a deployment pattern that has already been run successfully:
+
+- `web`: deployed to `your-server-host:3000`
+- `relay`: deployed to `your-server-host:8787`
+- `host-agent`: running on a local development machine and connecting to the cloud relay over the public network
+
+### Deployment Topology
 
 ```text
-.
-├── apps/
-│   ├── host-agent/
-│   ├── relay/
-│   └── web/
-├── packages/
-│   └── protocol/
-├── .env.example
-├── .gitignore
-├── package.json
-├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
-├── README.md
-└── README.en.md
+browser -> cloud web:3000 -> cloud relay:8787 <- local host-agent
 ```
+
+### 1. Deploy `web` and `relay` to the cloud server
+
+#### 1) Sync the code to the server
+
+Example target directory:
+
+```text
+/opt/ccmt/remote_claude
+```
+
+#### 2) Install Node / pnpm / dependencies
+
+If the server does not have `pnpm`, install or enable it first, then run from the project root:
+
+```bash
+pnpm install
+pnpm build
+```
+
+#### 3) Configure the relay environment file
+
+Example file:
+
+```text
+/etc/ccmt/relay.env
+```
+
+Example contents:
+
+```bash
+CCMT_RELAY_PORT=8787
+CCMT_WS_PATH=/ws
+CCMT_TOKEN_SECRET=<your-random-secret>
+CCMT_AGENT_ENROLL_SECRET=<your-random-enroll-secret>
+CCMT_RELAY_STATE_FILE=/opt/ccmt/remote_claude/apps/relay/.ccmt/relay-state.json
+CCMT_RELAY_STATE_DEBOUNCE_MS=500
+```
+
+#### 4) Configure the web environment file
+
+Example file:
+
+```text
+/etc/ccmt/web.env
+```
+
+Example contents:
+
+```bash
+NEXT_PUBLIC_CCMT_RELAY_HTTP_URL=http://your-server-host:8787
+NEXT_PUBLIC_CCMT_RELAY_WS_URL=ws://your-server-host:8787/ws
+PORT=3000
+HOSTNAME=0.0.0.0
+```
+
+#### 5) Start relay with systemd
+
+Example file:
+
+```text
+/etc/systemd/system/ccmt-relay.service
+```
+
+Example contents:
+
+```ini
+[Unit]
+Description=CCMT Relay
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ccmt/remote_claude/apps/relay
+EnvironmentFile=/etc/ccmt/relay.env
+ExecStart=/opt/ccmt/remote_claude/apps/relay/node_modules/.bin/tsx /opt/ccmt/remote_claude/apps/relay/src/index.ts
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start it:
+
+```bash
+systemctl daemon-reload
+systemctl enable --now ccmt-relay.service
+```
+
+#### 6) Start web with systemd
+
+Example file:
+
+```text
+/etc/systemd/system/ccmt-web.service
+```
+
+Adjust it based on the actual Node / pnpm paths on your server. The key point is to run Next.js in production mode on `0.0.0.0:3000`.
+
+In this deployment model, the public endpoints are:
+
+- Web: `http://your-server-host:3000`
+- Relay HTTP: `http://your-server-host:8787`
+- Relay WebSocket: `ws://your-server-host:8787/ws`
+
+So the public web build-time environment variables should match those endpoints.
+
+#### 6.1) A more robust web service pattern
+
+Because `node`, `pnpm`, and `next` paths vary across servers, a more reliable `ccmt-web.service` pattern is usually:
+
+- put `NEXT_PUBLIC_*`, `PORT`, and `HOSTNAME` in `EnvironmentFile`
+- point `WorkingDirectory` to `apps/web`
+- use the actual existing Node / pnpm / next paths in `ExecStart`
+
+That makes `systemctl status` and `journalctl -u ccmt-web.service` much easier to use for troubleshooting.
+
+#### 7) Health checks after cloud deployment
+
+```bash
+curl http://127.0.0.1:8787/health
+curl http://your-server-host:8787/health
+curl -I http://your-server-host:3000
+```
+
+### 2. Run `host-agent` locally against the cloud relay
+
+Create a `.env` in the repository root. Using `export` form is recommended:
+
+```bash
+export CCMT_WEB_RELAY_HTTP_URL=http://your-server-host:8787
+export CCMT_WEB_RELAY_WS_URL=ws://your-server-host:8787/ws
+export CCMT_AGENT_ENROLL_SECRET=<same-enroll-secret-as-relay>
+export CCMT_AGENT_ID=host-local
+export CCMT_TARGET_ID=claude-local
+export CCMT_SHELL=/bin/bash
+```
+
+Start it with:
+
+```bash
+cd /mnt/h/program/remote_claude
+source .env
+pnpm --dir apps/host-agent dev
+```
+
+If the connection is successful, the logs should look like:
+
+```text
+[host-agent] connecting
+[host-agent] ready
+```
+
+## Operational Notes and Troubleshooting Experience
+
+### 1. `source .env` was run, but host-agent still kept waiting for relay
+
+Symptom:
+
+```text
+[host-agent] waiting for relay...
+```
+
+Cause:
+
+- `.env` used plain `KEY=value`
+- the current shell could see the values
+- but child processes launched by `pnpm` did not necessarily inherit them
+- `host-agent` fell back to the default `http://127.0.0.1:8787`
+
+Fix:
+
+- either write `.env` as `export KEY=value`
+- or load it with:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+### 2. The relay systemd unit pointed to the wrong `tsx` path
+
+Symptom:
+
+- `ccmt-relay.service` failed to start
+- systemd returned `status=203/EXEC`
+
+Cause:
+
+- `ExecStart` pointed to a non-existent path:
+  `/opt/ccmt/remote_claude/node_modules/.bin/tsx`
+- the real executable was located at:
+  `/opt/ccmt/remote_claude/apps/relay/node_modules/.bin/tsx`
+
+Fix:
+
+- update `ExecStart`
+- run `systemctl daemon-reload`
+- run `systemctl restart ccmt-relay.service`
+
+### 3. A new enroll secret appeared to be configured, but relay still behaved as if it were using the old one
+
+It is better to troubleshoot from runtime behavior rather than trusting the config file alone:
+
+- call `/agents/register` directly for positive and negative tests
+- try both the intended secret and the default secret
+- verify actual service behavior, not just env file contents
 
 ## Troubleshooting
 
@@ -353,17 +538,17 @@ Check:
 
 ## Current Status
 
-The repo already has a full basic flow, but it is still closer to an extensible MVP than a finished platform:
+The repository already has a complete baseline flow, but it is still closer to an extensible MVP than a finished platform:
 
-- `lint` and `test` are still placeholders in most packages
+- `lint` and `test` are still placeholder scripts in most packages
 - user and permission management are still basic
 - host-agent currently publishes only a single shell target
-- deployment, monitoring, and production configuration docs are still limited
+- deployment, monitoring, and production configuration docs can still be improved
 
-If you continue development, natural next steps include:
+Natural next steps include:
 
-- automated tests
+- automated testing
 - lint / formatting standards
 - multi-target / multi-session support
 - finer-grained permissions beyond viewer / owner
-- deployment and production configuration
+- more complete deployment and production guidance
